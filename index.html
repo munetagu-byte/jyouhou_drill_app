@@ -15,7 +15,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useMemo } = React;
+    const { useState, useMemo, useEffect } = React;
 
     // 問題データ（135問）
     const questions = [
@@ -1605,9 +1605,21 @@
       const [currentIndex, setCurrentIndex] = useState(0);
       const [selectedAnswer, setSelectedAnswer] = useState(null);
       const [showResult, setShowResult] = useState(false);
-      const [history, setHistory] = useState({});
+      const [history, setHistory] = useState(() => {
+        try {
+          const saved = localStorage.getItem('drill_history');
+          return saved ? JSON.parse(saved) : {};
+        } catch { return {}; }
+      });
       const [sessionResults, setSessionResults] = useState([]);
       const [sessionSeed] = useState(() => Date.now()); // セッションごとのシード
+
+      // history が変化するたびに localStorage へ保存
+      useEffect(() => {
+        try {
+          localStorage.setItem('drill_history', JSON.stringify(history));
+        } catch {}
+      }, [history]);
 
       // フィルター済み問題リスト
       const filteredQuestions = useMemo(() => {
@@ -1718,7 +1730,10 @@
       };
 
       const backToMenu = () => setMode('menu');
-      const resetHistory = () => setHistory({});
+      const resetHistory = () => {
+        setHistory({});
+        try { localStorage.removeItem('drill_history'); } catch {}
+      };
 
       const stats = useMemo(() => {
         const total = Object.keys(history).length;
